@@ -13,7 +13,7 @@ from threading import Thread
 
 # --- НАСТРОЙКИ ---
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-ADMIN_ID = int(os.getenv("ADMIN_ID", 0))  # По умолчанию 0, если не задано
+ADMIN_ID = int(os.getenv("ADMIN_ID", 0)) 
 SHOP_NAME = "SloNik_ShoP"
 
 logging.basicConfig(level=logging.INFO)
@@ -22,7 +22,6 @@ bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
 # --- ФЕЙКОВЫЙ ВЕБ-СЕРВЕР ДЛЯ RENDER ---
-# (Чтобы Render не убивал бота, так как он ищет открытый порт)
 app = Flask(__name__)
 
 @app.route('/')
@@ -75,9 +74,9 @@ async def cmd_start(message: types.Message):
         await db.commit()
     
     if message.from_user.id == ADMIN_ID:
-        await message.answer(f"👑 Привет, Админ!\nПанель управления **{SHOP_NAME}** готова.", reply_markup=admin_menu(), parse_mode="Markdown")
+        await message.answer(f"👑 Привет, Админ!\nПанель управления {SHOP_NAME} готова.", reply_markup=admin_menu())
     else:
-        await message.answer(f"👋 Добро пожаловать в **{SHOP_NAME}**!\n\nЗдесь вы можете купить игровые аккаунты и валюту.", reply_markup=main_menu(), parse_mode="Markdown")
+        await message.answer(f"👋 Добро пожаловать в {SHOP_NAME}!\n\nЗдесь вы можете купить игровые аккаунты и валюту.", reply_markup=main_menu())
 
 @dp.message(F.text == "💳 Мой баланс")
 async def show_balance(message: types.Message):
@@ -85,18 +84,18 @@ async def show_balance(message: types.Message):
         async with db.execute("SELECT balance FROM users WHERE user_id = ?", (message.from_user.id,)) as cursor:
             row = await cursor.fetchone()
             balance = row[0] if row else 0.0
-    await message.answer(f"💳 Ваш баланс в **{SHOP_NAME}**: `{balance}` руб.\n\nДля пополнения напишите в поддержку.", parse_mode="Markdown")
+    await message.answer(f"💳 Ваш баланс в {SHOP_NAME}: {balance} руб.\n\nДля пополнения напишите в поддержку.")
 
 @dp.message(F.text == "🆘 Поддержка")
 async def support(message: types.Message):
-    await message.answer(f"🆘 Связь с администратором **{SHOP_NAME}**: @ваш_никнейм", parse_mode="Markdown")
+    await message.answer(f"🆘 Связь с администратором {SHOP_NAME}: @ваш_никнейм")
 
 @dp.message(F.text == "🛒 Купить / Выбрать игру")
 async def buy_menu(message: types.Message):
     builder = InlineKeyboardBuilder()
     builder.row(InlineKeyboardButton(text="🎮 Игра 1 (Валюта)", callback_data="buy_game_1"))
     builder.row(InlineKeyboardButton(text="🎮 Игра 2 (Аккаунт)", callback_data="buy_game_2"))
-    await message.answer(f"🛒 Выберите категорию в **{SHOP_NAME}**:", reply_markup=builder.as_markup(), parse_mode="Markdown")
+    await message.answer(f"🛒 Выберите категорию в {SHOP_NAME}:", reply_markup=builder.as_markup())
 
 @dp.callback_query(F.data.startswith("buy_"))
 async def process_buy(callback: types.CallbackQuery):
@@ -110,7 +109,7 @@ async def admin_panel(message: types.Message):
     builder = InlineKeyboardBuilder()
     builder.row(InlineKeyboardButton(text="Создать сделку", callback_data="admin_create_deal"))
     builder.row(InlineKeyboardButton(text="Выдать баланс", callback_data="admin_add_balance"))
-    await message.answer(f"👑 Админ-панель **{SHOP_NAME}**:", reply_markup=builder.as_markup(), parse_mode="Markdown")
+    await message.answer(f"👑 Админ-панель {SHOP_NAME}:", reply_markup=builder.as_markup())
 
 @dp.callback_query(F.data == "admin_create_deal")
 async def admin_deal_start(callback: types.CallbackQuery, state: FSMContext):
@@ -170,9 +169,7 @@ async def admin_balance_amount(message: types.Message, state: FSMContext):
 # --- ЗАПУСК ---
 async def main():
     await init_db()
-    # Запускаем фейковый веб-сервер в фоне, чтобы Render думал, что это веб-приложение
     Thread(target=run_flask, daemon=True).start()
-    
     print(f"Бот {SHOP_NAME} запущен!")
     await dp.start_polling(bot)
 
